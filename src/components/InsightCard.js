@@ -11,8 +11,10 @@ const InsightCard = ({ title, description, type = 'success' }) => {
         return AlertCircle ? <AlertCircle size={28} color={COLORS.black} strokeWidth={3} /> : null;
       case 'warning': 
         return AlertTriangle ? <AlertTriangle size={28} color={COLORS.black} strokeWidth={3} /> : null;
+      case 'tip':
       case 'success': 
         return CheckCircle ? <CheckCircle size={28} color={COLORS.black} strokeWidth={3} /> : null;
+      case 'insight':
       default: 
         return TrendingUp ? <TrendingUp size={28} color={COLORS.black} strokeWidth={3} /> : null;
     }
@@ -22,7 +24,9 @@ const InsightCard = ({ title, description, type = 'success' }) => {
     switch (type) {
       case 'danger': return COLORS.danger;
       case 'warning': return COLORS.primary;
+      case 'tip':
       case 'success': return COLORS.accent;
+      case 'insight':
       default: return COLORS.white;
     }
   };

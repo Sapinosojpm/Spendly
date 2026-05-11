@@ -3,7 +3,8 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ScrollView 
+  ScrollView,
+  TouchableOpacity
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -24,16 +25,24 @@ import {
   Zap
 } from 'lucide-react-native';
 
-const VibeScreen = () => {
+const VibeScreen = ({ navigation }) => {
   const { 
     getPaydayInfo, 
     getDailyHack, 
-    getMotivationalQuote 
+    getMotivationalQuote,
+    getTotals,
+    goals
   } = useBudgetStore();
   
   const paydayInfo = getPaydayInfo();
   const dailyHack = getDailyHack();
   const dailyQuote = getMotivationalQuote();
+  const totals = getTotals();
+
+  // Current Savings Progress
+  const mainGoal = goals[0] || { name: 'Wala pang Pangarap', target: 1 };
+  const currentSavings = totals.spent.Savings;
+  const progressPercent = Math.min(100, (currentSavings / mainGoal.target) * 100);
 
   const achievements = [
     { id: 1, icon: <Flame size={24} color={COLORS.black} />, label: "7-DAY STREAK", color: COLORS.primary },
@@ -64,23 +73,39 @@ const VibeScreen = () => {
           <View style={styles.sectionHeader}>
             <Target size={20} color={COLORS.black} strokeWidth={3} />
             <Text style={styles.sectionTitle}>PANGARAP METER</Text>
+            <TouchableOpacity 
+              style={styles.editBtn} 
+              onPress={() => navigation.navigate('AddGoal')}
+            >
+              <Text style={styles.editBtnText}>BAGUHIN</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.goalCard}>
+          <TouchableOpacity 
+            style={styles.goalCard} 
+            onPress={() => navigation.navigate('AddGoal')}
+            activeOpacity={0.8}
+          >
             <View style={styles.goalInfo}>
               <View style={styles.goalIconBox}>
                 <Palmtree size={32} color={COLORS.black} />
               </View>
               <View>
-                <Text style={styles.goalName}>BORACAY FUND 🏝️</Text>
-                <Text style={styles.goalProgress}>₱15,000 / ₱25,000</Text>
+                <Text style={styles.goalName}>{mainGoal.name.toUpperCase()}</Text>
+                <Text style={styles.goalProgress}>
+                  ₱{currentSavings.toLocaleString()} / ₱{mainGoal.target.toLocaleString()}
+                </Text>
               </View>
             </View>
             <View style={styles.mainProgressContainer}>
-              <View style={[styles.mainProgressBar, { width: '60%' }]} />
+              <View style={[styles.mainProgressBar, { width: `${progressPercent}%` }]} />
             </View>
-            <Text style={styles.goalHint}>Onti na lang, makaka-bakasyon ka na!</Text>
-          </View>
+            <Text style={styles.goalHint}>
+              {progressPercent >= 100 
+                ? "BINGO! Nakuha mo na ang pangarap mo! 🥳" 
+                : `₱${(mainGoal.target - currentSavings).toLocaleString()} pa ang kailangan mo, lodi!`}
+            </Text>
+          </TouchableOpacity>
 
           {/* Daily Inspiration */}
           <View style={styles.divider}>
@@ -172,6 +197,19 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.black,
     letterSpacing: 1,
+    flex: 1,
+  },
+  editBtn: {
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 2,
+    borderColor: COLORS.black,
+  },
+  editBtnText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: COLORS.black,
   },
   goalCard: {
     backgroundColor: COLORS.white,

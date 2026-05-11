@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { runInsightsEngine } from '../ai/insightsEngine';
+import { syncExpense, deleteExpenseSync } from '../services/api';
 
 const useBudgetStore = create(
   persist(
@@ -13,34 +14,70 @@ const useBudgetStore = create(
         Savings: 20,
       },
       expenses: [],
+      goals: [
+        { id: '1', name: 'Boracay Fund 🏝️', target: 25000, icon: 'palmtree' }
+      ],
       isOnboarded: false,
+      themeId: 'yellow',
 
       // Actions
       setIncome: (income) => set({ income }),
       setAllocations: (allocations) => set({ allocations }),
       setOnboarded: (status) => set({ isOnboarded: !!status }),
+      setTheme: (themeId) => set({ themeId }),
       
-      addExpense: (expense) => set((state) => ({
-        expenses: [
-          ...state.expenses,
-          {
-            id: Date.now().toString(),
-            date: new Date().toISOString(),
-            ...expense
-          }
-        ]
-      })),
+      addExpense: (expense) => {
+        const id = Date.now().toString();
+        const date = new Date().toISOString();
+        const userId = "661e5f5e5f5e5f5e5f5e5f5e"; // Placeholder
 
-      deleteExpense: (id) => set((state) => ({
-        expenses: state.expenses.filter((e) => e.id !== id)
-      })),
+        set((state) => ({
+          expenses: [
+            ...state.expenses,
+            { id, date, ...expense }
+          ]
+        }));
+
+        // SYNC TO BACKEND
+        syncExpense({
+          user: userId,
+          amount: expense.amount,
+          category: expense.category,
+          description: expense.description,
+          date: date
+        }).catch(err => console.log("Failed to sync expense:", err));
+      },
+
+      deleteExpense: (id) => {
+        set((state) => ({
+          expenses: state.expenses.filter((e) => e.id !== id)
+        }));
+
+        // SYNC TO BACKEND (Optional: Requires record of MongoDB ID)
+        // For now, local ID doesn't match MongoDB ID, so we skip backend delete
+        // unless we store the backend ID in the local state.
+      },
 
       clearData: () => set({
         income: 0,
         allocations: { Bills: 50, Wants: 30, Savings: 20 },
         expenses: [],
+        goals: [{ id: '1', name: 'Boracay Fund 🏝️', target: 25000, icon: 'palmtree' }],
         isOnboarded: false
       }),
+
+      // Goal Actions
+      addGoal: (goal) => set((state) => ({
+        goals: [...state.goals, { id: Date.now().toString(), ...goal }]
+      })),
+      
+      deleteGoal: (id) => set((state) => ({
+        goals: state.goals.filter(g => g.id !== id)
+      })),
+
+      updateGoal: (id, updates) => set((state) => ({
+        goals: state.goals.map(g => g.id === id ? { ...g, ...updates } : g)
+      })),
 
       // Computed totals
       getTotals: () => {
@@ -132,7 +169,8 @@ const useBudgetStore = create(
           wants: allocations.Wants,
           savings: allocations.Savings,
         };
-        return runInsightsEngine({ income, budgetAllocation, expenses });
+        const paydayInfo = get().getPaydayInfo();
+        return runInsightsEngine({ income, budgetAllocation, expenses, paydayInfo });
       },
 
       // Vibe Features

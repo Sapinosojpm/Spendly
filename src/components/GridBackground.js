@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Svg, { Pattern, Rect, Path, Defs } from 'react-native-svg';
-import { COLORS } from '../utils/constants';
-
-const { width, height } = Dimensions.get('window');
+import useTheme from '../utils/useTheme';
 
 const GridBackground = ({ children }) => {
+  const C = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: C.background }]}>
       <Svg style={StyleSheet.absoluteFill}>
         <Defs>
           <Pattern
@@ -19,7 +19,7 @@ const GridBackground = ({ children }) => {
             <Path
               d="M 20 0 L 0 0 0 20"
               fill="none"
-              stroke="#D1D5DB"
+              stroke={C.gridStroke}
               strokeWidth="1.5"
             />
           </Pattern>
@@ -34,7 +34,6 @@ const GridBackground = ({ children }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
 });
 

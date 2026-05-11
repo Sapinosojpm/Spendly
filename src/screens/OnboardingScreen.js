@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, BUDGET_RULES } from '../utils/constants';
 import useBudgetStore from '../store/useBudgetStore';
 import GridBackground from '../components/GridBackground';
+import BrutalistConfirmationModal from '../components/BrutalistConfirmationModal';
 
 const OnboardingScreen = ({ navigation }) => {
   const [income, setIncome] = useState('');
@@ -20,6 +21,7 @@ const OnboardingScreen = ({ navigation }) => {
   const [payday2, setPayday2] = useState('30');
   const [isCustom, setIsCustom] = useState(false);
   const [allocations, setAllocations] = useState(BUDGET_RULES.default);
+  const [showError, setShowError] = useState(false);
 
   const setStoreIncome = useBudgetStore((state) => state.setIncome);
   const setStoreAllocations = useBudgetStore((state) => state.setAllocations);
@@ -28,35 +30,29 @@ const OnboardingScreen = ({ navigation }) => {
 
   const handleStart = () => {
     if (!income || parseFloat(income) <= 0) {
-      alert('Mag-enter po ng tamang monthly income.');
+      setShowError(true);
       return;
     }
-
-    const total = Object.values(allocations).reduce((a, b) => a + b, 0);
-    if (total !== 100) {
-      alert('Dapat 100% ang kabuuan ng iyong budget.');
-      return;
-    }
-
-    // Process paydays
-    const days = [];
-    if (payday1) days.push(parseInt(payday1));
-    if (payday2) days.push(parseInt(payday2));
     
-    // Sort and remove duplicates/invalid
-    const finalDays = [...new Set(days)]
-      .filter(d => d >= 1 && d <= 31)
-      .sort((a, b) => a - b);
-
-    if (finalDays.length === 0) {
-      alert('Mag-enter po ng kahit isang petsa ng sahod (1-31).');
-      return;
+    const finalIncome = parseFloat(income);
+    
+    // Process paydays - Defaults to 15 & 30 if empty
+    let finalDays = [15, 30];
+    if (payday1 || payday2) {
+      const days = [];
+      if (payday1) days.push(parseInt(payday1));
+      if (payday2) days.push(parseInt(payday2));
+      finalDays = [...new Set(days)]
+        .filter(d => d >= 1 && d <= 31)
+        .sort((a, b) => a - b);
+      
+      if (finalDays.length === 0) finalDays = [15, 30];
     }
 
-    setStoreIncome(parseFloat(income));
+    setStoreIncome(finalIncome);
     setStoreAllocations(allocations);
     setStorePaydayDays(finalDays);
-    setOnboarded(true);
+    navigation.navigate('SetupComplete');
   };
 
   const updateAllocation = (key, value) => {
@@ -189,6 +185,16 @@ const OnboardingScreen = ({ navigation }) => {
             <View style={{ height: 40 }} />
           </ScrollView>
         </KeyboardAvoidingView>
+
+        <BrutalistConfirmationModal
+          visible={showError}
+          onClose={() => setShowError(false)}
+          onConfirm={() => setShowError(false)}
+          title="KULANG ANG DATA!"
+          message="Kailangan naming malaman ang iyong Monthly Income para ma-calculate ang iyong budget lodi."
+          confirmText="Sige, Lalagyan Ko"
+          cancelText="Bumalik"
+        />
       </SafeAreaView>
     </GridBackground>
   );
